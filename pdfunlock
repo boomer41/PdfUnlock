@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # PDFUnlock
-# Copyright (c) 2020 Stephan Brunner <s.brunner@stephan-brunner.net>
+# Copyright (c) 2021 Stephan Brunner <s.brunner@stephan-brunner.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -22,7 +22,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-VERSION=0.1
+VERSION=0.2
 
 set -e
 
@@ -42,17 +42,51 @@ PDFINFO=$(findExecutable pdfinfo)
 PDFUNITE=$(findExecutable pdfunite)
 MKTEMP=$(findExecutable mktemp)
 
-if [ $# -ne 2 ]
+if [ $# -ne 2 ] && [ $# -ne 4 ]
 then
 	echo "PDFUnlock v${VERSION}"
-	echo "Copyright (c) 2020 Stephan Brunner <s.brunner@stephan-brunner.net>"
+	echo "Copyright (c) 2021 Stephan Brunner <s.brunner@stephan-brunner.net>"
 	echo
-	echo Usage: $0 [Locked PDF] [Unlocked PDF]
+	echo Usage: $0 [Locked PDF] [Unlocked PDF] \([PasswordType] [Password]\)
+	echo
+	echo Available password types: user, owner
+	echo
+	echo "Examples:"
+	echo "- Remove editing password when no view password is set:"
+	echo "  pdfunlock protected.pdf unprotected.pdf"
+	echo "- Remove view password when view/user password is known:"
+	echo "  pdfunlock protected.pdf unprotected.pdf user viewPassword"
+	echo "- Remove modification password when editing/owner password is known:"
+	echo "  pdfunlock protected.pdf unprotected.pdf owner editPassword"
 	exit 2
 fi
 
 LOCKED_PDF=${1}
 UNLOCKED_PDF=${2}
+PASSWORD_TYPE=${3}
+PASSWORD=${4}
+
+PASSWORD_OPT=""
+
+if [ "x${PASSWORD_TYPE}" = "x" ]
+then
+	PASSWORD_OPT=""
+elif [ "x${PASSWORD_TYPE}" = "xuser" ]
+then
+	PASSWORD_OPT="-upw ${PASSWORD}"
+elif [ "x${PASSWORD_TYPE}" = "xowner" ]
+then
+	PASSWORD_OPT="-opw ${PASSWORD}"
+else
+	echo "Invalid password type!"
+	exit 3
+fi
+
+if [ "x${PASSWORD_TYPE}" != "x" ] && [ "x${PASSWORD}" = "x" ]
+then
+   echo "password type is set, but no password given"
+   exit 3
+fi
 
 if [ ! -r "${LOCKED_PDF}" ]
 then
@@ -69,7 +103,7 @@ then
 	exit 4
 fi
 
-NUMPAGES=$(pdfinfo "${LOCKED_PDF}" | grep Pages | awk '{print $2}')
+NUMPAGES=$(pdfinfo ${PASSWORD_OPT} "${LOCKED_PDF}" | grep Pages | awk '{print $2}')
 echo Detected $NUMPAGES pages...
 
 if ! [[ "${NUMPAGES}" =~ ^[0-9]+$ ]]
@@ -90,7 +124,7 @@ CONCATLIST=""
 for (( PAGE=1; PAGE<=$NUMPAGES; PAGE++ ))
 do
 	echo Processing page $PAGE...
-	$PDFTOPS -eps -f $PAGE -l $PAGE "${LOCKED_PDF}" $TMPDIR/page.$PAGE.eps
+	$PDFTOPS ${PASSWORD_OPT} -eps -f $PAGE -l $PAGE "${LOCKED_PDF}" $TMPDIR/page.$PAGE.eps
 	$PSTOPDF -dEPSCrop $TMPDIR/page.$PAGE.eps $TMPDIR/page.$PAGE.pdf
 	CONCATLIST="${CONCATLIST} $TMPDIR/page.$PAGE.pdf"
 done

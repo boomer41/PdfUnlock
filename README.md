@@ -1,17 +1,11 @@
 # PdfUnlock
-This script aims to remove modification restrictions from PDF files. 
-
-The file must not be encrypted, and you must be able to **view** it.
+This script aims to remove modification restrictions from PDF files.
 
 ## How it works
 The script converts the input PDF file to PostScript files, and then back to PDF files. The resulting PDF files will be united again, creating the final PDF file.
 
 ## How to use
-Call the script as follows:
-```bash
-pdfunlock [Locked PDF] [Unlocked PDF]
-```
-
+To see the help, invoke the script with no parameters.
 When the script has terminated, the unlocked PDF should be available at the destination path you provided.
 
 ## Installation
@@ -30,7 +24,7 @@ chmod +x /usr/bin/pdfunlock
 ```
 
 ## License
-Copyright 2020 Stephan Brunner
+Copyright 2021 Stephan Brunner
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
